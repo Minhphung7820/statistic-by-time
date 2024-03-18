@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Voucher;
 use Illuminate\Support\Facades\Route;
 use Carbon\Carbon;
 /*
@@ -79,5 +80,35 @@ Route::get('/by-year', function () {
         $startCarbon->addYear();
     }
 
+    dd($response);
+});
+
+Route::get('/', function () {
+    // Truy vấn dữ liệu từ database
+    $vouchers = Voucher::whereIn('id', [51, 52])->selectRaw('submitter_id, object_type, SUM(total_amount) as total_amount')
+        ->groupBy('submitter_id', 'object_type')
+        ->get();
+
+    // Khởi tạo mảng response
+    $response = [];
+
+    // Loop qua kết quả truy vấn để xây dựng mảng response
+    foreach ($vouchers as $voucher) {
+        $submitterId = $voucher->submitter_id;
+        $objectType = $voucher->object_type;
+        $totalAmount = $voucher->total_amount;
+
+        // Kiểm tra xem submitter_id đã có trong mảng response chưa, nếu chưa thì thêm vào
+        if (!isset($response[$submitterId])) {
+            $response[$submitterId] = [
+                "receipt" => 0,
+                "expense_voucher" => 0
+            ];
+        }
+
+        // Gán tổng total_amount vào loại voucher tương ứng
+        $response[$submitterId][$objectType] = $totalAmount;
+        $response[$submitterId]['id'] = $submitterId;
+    }
     dd($response);
 });
